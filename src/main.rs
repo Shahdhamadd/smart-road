@@ -50,6 +50,10 @@ fn main() {
 
     let mut event_pump = sdl_context.event_pump().expect("event pump");
 
+    if !show_menu(&mut canvas, &texture_creator, &ttf_context, &mut event_pump) {
+        return;
+    }
+
     let paths = PathTable::new();
     let mut vehicles: Vec<Vehicle> = Vec::new();
     let mut stats = Stats::new();
@@ -142,6 +146,78 @@ fn try_spawn(
     }
 }
 
+fn show_menu(
+    canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
+    texture_creator: &sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+    ttf_context: &sdl2::ttf::Sdl2TtfContext,
+    event_pump: &mut sdl2::EventPump,
+) -> bool {
+    let font = find_font().map(|p| ttf_context.load_font(p, 26).expect("load font"));
+    let title_font = find_font().map(|p| ttf_context.load_font(p, 72).expect("load font"));
+
+    const CONTROLS: [(&str, &str); 6] = [
+        ("Up", "vehicle from the south"),
+        ("Down", "vehicle from the north"),
+        ("Right", "vehicle from the west"),
+        ("Left", "vehicle from the east"),
+        ("R", "toggle random vehicles"),
+        ("Esc", "end and show statistics"),
+    ];
+
+    let start = Instant::now();
+    loop {
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => return false,
+                Event::KeyDown { keycode: Some(Keycode::Return), .. }
+                | Event::KeyDown { keycode: Some(Keycode::Space), .. } => return true,
+                _ => {}
+            }
+        }
+
+        render::draw_scene(canvas);
+        canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
+        canvas.set_draw_color(Color::RGBA(16, 18, 24, 205));
+        canvas.fill_rect(None).ok();
+        canvas.set_blend_mode(sdl2::render::BlendMode::None);
+
+        if let Some(tf) = &title_font {
+            draw_text_centered(canvas, texture_creator, tf, "Smart Road", 170, Color::RGB(255, 255, 255));
+        }
+        if let Some(f) = &font {
+            draw_text_centered(
+                canvas,
+                texture_creator,
+                f,
+                "Autonomous intersection simulation",
+                265,
+                Color::RGB(240, 200, 40),
+            );
+
+            let mut y = 370;
+            for (key, action) in CONTROLS {
+                draw_text(canvas, texture_creator, f, key, 290, y, Color::RGB(255, 255, 255));
+                draw_text(canvas, texture_creator, f, action, 400, y, Color::RGB(200, 200, 200));
+                y += 42;
+            }
+
+            if start.elapsed().as_millis() / 600 % 2 == 0 {
+                draw_text_centered(
+                    canvas,
+                    texture_creator,
+                    f,
+                    "Press Enter or Space to start",
+                    700,
+                    Color::RGB(255, 255, 255),
+                );
+            }
+            draw_text_centered(canvas, texture_creator, f, "Esc to quit", 750, Color::RGB(150, 150, 150));
+        }
+
+        canvas.present();
+    }
+}
+
 fn show_stats_screen(
     canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
     texture_creator: &sdl2::render::TextureCreator<sdl2::video::WindowContext>,
@@ -205,4 +281,16 @@ fn draw_text(
     let sdl2::render::TextureQuery { width, height, .. } = texture.query();
     let dst = sdl2::rect::Rect::new(x, y, width, height);
     canvas.copy(&texture, None, Some(dst)).ok();
+}
+
+fn draw_text_centered(
+    canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
+    texture_creator: &sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+    font: &sdl2::ttf::Font,
+    text: &str,
+    y: i32,
+    color: Color,
+) {
+    let (w, _) = font.size_of(text).expect("measure text");
+    draw_text(canvas, texture_creator, font, text, (WIN_W as i32 - w as i32) / 2, y, color);
 }

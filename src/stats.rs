@@ -71,8 +71,6 @@ impl Stats {
     }
 }
 
-/// Tracks pairs of vehicles currently violating the safe distance so each
-/// violation episode is only counted once (not once per frame it persists).
 pub fn update_close_calls(vehicles: &[Vehicle], stats: &mut Stats, active: &mut HashSet<(u64, u64)>) {
     let mut still_active: HashSet<(u64, u64)> = HashSet::new();
     for i in 0..vehicles.len() {

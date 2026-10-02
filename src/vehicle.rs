@@ -21,6 +21,8 @@ pub struct Vehicle {
     pub min_vel: f64,
     pub max_vel: f64,
     pub color_idx: usize,
+    pub granted: bool,
+    pub waiting: f64,
 }
 
 impl Vehicle {
@@ -40,6 +42,8 @@ impl Vehicle {
             min_vel: SLOW,
             max_vel: SLOW,
             color_idx,
+            granted: false,
+            waiting: 0.0,
         }
     }
 
@@ -55,7 +59,6 @@ impl Vehicle {
         self.s >= self.path.total_len
     }
 
-    /// Advance velocity toward `target` respecting accel/decel limits, then integrate position.
     pub fn step(&mut self, target: f64, dt: f64) {
         let target = target.clamp(0.0, FAST);
         if self.velocity < target {

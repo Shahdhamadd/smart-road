@@ -6,7 +6,7 @@ struct Sample {
     dist: f64,
     x: f64,
     y: f64,
-    angle: f64, // degrees, clockwise from "up", continuous/unwrapped along the path
+    angle: f64,
 }
 
 pub struct Path {
@@ -14,6 +14,7 @@ pub struct Path {
     pub total_len: f64,
     pub box_enter_dist: f64,
     pub box_exit_dist: f64,
+    pub cells: Vec<((i32, i32), f64)>,
 }
 
 fn angle_from_tangent(dx: f64, dy: f64) -> f64 {
@@ -61,7 +62,7 @@ fn build_from_points(pts: &[(f64, f64)]) -> Path {
     }
 
     let total_len = dist;
-    Path { samples, total_len, box_enter_dist: 0.0, box_exit_dist: total_len }
+    Path { samples, total_len, box_enter_dist: 0.0, box_exit_dist: total_len, cells: Vec::new() }
 }
 
 fn dist_at_point(pts: &[(f64, f64)], target: (f64, f64)) -> f64 {
@@ -88,11 +89,13 @@ pub fn build_path(entry: Direction, route: Route) -> Path {
     let exit = geometry::exit_point_final(entry, route);
 
     if route == Route::Straight {
-        let mut path = build_from_points(&[spawn, exit]);
         let box_enter = geometry::box_entry_point(entry, route);
         let box_exit = geometry::box_exit_point(entry, route);
-        path.box_enter_dist = dist_at_point(&[spawn, exit], box_enter);
-        path.box_exit_dist = dist_at_point(&[spawn, exit], box_exit);
+        let pts = [spawn, box_enter, box_exit, exit];
+        let mut path = build_from_points(&pts);
+        path.box_enter_dist = dist_at_point(&pts, box_enter);
+        path.box_exit_dist = dist_at_point(&pts, box_exit);
+        path.cells = swept_cells(&path);
         return path;
     }
 
@@ -103,13 +106,11 @@ pub fn build_path(entry: Direction, route: Route) -> Path {
 
     let mut pts = Vec::with_capacity(64);
     pts.push(spawn);
-    // straight run-up to the box boundary
     const LEAD: usize = 4;
     for i in 1..LEAD {
         let t = i as f64 / LEAD as f64;
         pts.push((spawn.0 + (box_in.0 - spawn.0) * t, spawn.1 + (box_in.1 - spawn.1) * t));
     }
-    // quadratic bezier through the box
     const CURVE: usize = 48;
     for i in 0..=CURVE {
         let t = i as f64 / CURVE as f64;
@@ -118,7 +119,6 @@ pub fn build_path(entry: Direction, route: Route) -> Path {
         let y = mt * mt * box_in.1 + 2.0 * mt * t * control.1 + t * t * box_out.1;
         pts.push((x, y));
     }
-    // straight run-out to the far edge
     const TAIL: usize = 4;
     for i in 1..=TAIL {
         let t = i as f64 / TAIL as f64;
@@ -128,15 +128,40 @@ pub fn build_path(entry: Direction, route: Route) -> Path {
     let mut path = build_from_points(&pts);
     path.box_enter_dist = dist_at_point(&pts, box_in);
     path.box_exit_dist = dist_at_point(&pts, box_out);
+    path.cells = swept_cells(&path);
     path
 }
 
+fn swept_cells(path: &Path) -> Vec<((i32, i32), f64)> {
+    let half_len = CAR_LEN / 2.0 + FOOTPRINT_MARGIN;
+    let half_wid = CAR_WID / 2.0 + FOOTPRINT_MARGIN;
+    let mut last: std::collections::HashMap<(i32, i32), f64> = std::collections::HashMap::new();
+    let mut s = 0.0;
+    while s <= path.total_len {
+        let (x, y, angle) = path.sample(s);
+        let a = angle.to_radians();
+        let (fx, fy) = (a.sin(), -a.cos());
+        let (px, py) = (-fy, fx);
+        const ALONG: usize = 6;
+        const ACROSS: usize = 2;
+        for i in 0..=ALONG {
+            let l = -half_len + 2.0 * half_len * (i as f64 / ALONG as f64);
+            for j in 0..=ACROSS {
+                let w = -half_wid + 2.0 * half_wid * (j as f64 / ACROSS as f64);
+                if let Some(cell) = grid_cell(x + fx * l + px * w, y + fy * l + py * w) {
+                    last.insert(cell, s);
+                }
+            }
+        }
+        s += 2.0;
+    }
+    last.into_iter().collect()
+}
+
 impl Path {
-    /// World position and heading angle (degrees, clockwise, 0 = facing up) at arc-length `s`.
     pub fn sample(&self, s: f64) -> (f64, f64, f64) {
         let s = s.clamp(0.0, self.total_len);
         let samples = &self.samples;
-        // binary search for the bracketing pair
         let mut lo = 0usize;
         let mut hi = samples.len() - 1;
         while lo + 1 < hi {

@@ -5,9 +5,6 @@ use crate::geometry::{Direction, Route};
 use crate::path::PathTable;
 use crate::vehicle::{Vehicle, VehicleId};
 
-/// Tries to create a vehicle entering from `entry` on a randomly chosen route.
-/// Refuses (returns None) if the chosen lane already has a vehicle too close to
-/// the spawn point, so rapid key-spamming never stacks vehicles on top of each other.
 pub fn spawn(
     entry: Direction,
     vehicles: &[Vehicle],

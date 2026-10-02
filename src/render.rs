@@ -38,7 +38,6 @@ impl<'a> Assets<'a> {
                     let h = CAR_LEN as u32;
                     tc.set_draw_color(color);
                     tc.fill_rect(Rect::new(0, 0, w, h)).ok();
-                    // windshield near the front (texture faces "up")
                     tc.set_draw_color(Color::RGB(35, 35, 45));
                     let wind_w = (w as f64 * 0.7) as u32;
                     let wind_h = (h as f64 * 0.28) as u32;
@@ -65,7 +64,7 @@ impl<'a> Assets<'a> {
 }
 
 pub fn draw_scene(canvas: &mut Canvas<Window>) {
-    canvas.set_draw_color(Color::RGB(70, 148, 74)); // grass
+    canvas.set_draw_color(Color::RGB(70, 148, 74));
     canvas.clear();
 
     let road_color = Color::RGB(58, 58, 63);
@@ -77,43 +76,60 @@ pub fn draw_scene(canvas: &mut Canvas<Window>) {
         .fill_rect(Rect::new(0, BOX_MIN as i32, WIN_W, (2.0 * APPROACH) as u32))
         .ok();
 
-    canvas.set_draw_color(Color::RGB(212, 202, 90));
-    for i in 1..3 {
-        let x = BOX_MIN + i as f64 * LANE_W;
-        draw_dashed_v(canvas, x, 0.0, BOX_MIN);
-        draw_dashed_v(canvas, x, BOX_MAX, WIN_H as f64);
-        let y = BOX_MIN + i as f64 * LANE_W;
-        draw_dashed_h(canvas, y, 0.0, BOX_MIN);
-        draw_dashed_h(canvas, y, BOX_MAX, WIN_W as f64);
+    for i in 1..6 {
+        let c = BOX_MIN + i as f64 * LANE_W;
+        if i == 3 {
+            canvas.set_draw_color(Color::RGB(240, 200, 40));
+            fill_v(canvas, c, 0.0, BOX_MIN);
+            fill_v(canvas, c, BOX_MAX, WIN_H as f64);
+            fill_h(canvas, c, 0.0, BOX_MIN);
+            fill_h(canvas, c, BOX_MAX, WIN_W as f64);
+        } else {
+            canvas.set_draw_color(Color::RGB(235, 235, 235));
+            draw_dashed_v(canvas, c, 0.0, BOX_MIN);
+            draw_dashed_v(canvas, c, BOX_MAX, WIN_H as f64);
+            draw_dashed_h(canvas, c, 0.0, BOX_MIN);
+            draw_dashed_h(canvas, c, BOX_MAX, WIN_W as f64);
+        }
     }
 
-    canvas.set_draw_color(Color::RGB(225, 225, 225));
-    for &x in &[BOX_MIN, BOX_MAX] {
-        canvas.draw_line((x as i32, 0), (x as i32, BOX_MIN as i32)).ok();
-        canvas.draw_line((x as i32, BOX_MAX as i32), (x as i32, WIN_H as i32)).ok();
-    }
-    for &y in &[BOX_MIN, BOX_MAX] {
-        canvas.draw_line((0, y as i32), (BOX_MIN as i32, y as i32)).ok();
-        canvas.draw_line((BOX_MAX as i32, y as i32), (WIN_W as i32, y as i32)).ok();
+    canvas.set_draw_color(Color::RGB(235, 235, 235));
+    for &c in &[BOX_MIN, BOX_MAX] {
+        fill_v(canvas, c, 0.0, BOX_MIN);
+        fill_v(canvas, c, BOX_MAX, WIN_H as f64);
+        fill_h(canvas, c, 0.0, BOX_MIN);
+        fill_h(canvas, c, BOX_MAX, WIN_W as f64);
     }
 }
 
+const LINE_W: f64 = 3.0;
+
+fn fill_v(canvas: &mut Canvas<Window>, x: f64, y0: f64, y1: f64) {
+    canvas
+        .fill_rect(Rect::new((x - LINE_W / 2.0).round() as i32, y0 as i32, LINE_W as u32, (y1 - y0) as u32))
+        .ok();
+}
+
+fn fill_h(canvas: &mut Canvas<Window>, y: f64, x0: f64, x1: f64) {
+    canvas
+        .fill_rect(Rect::new(x0 as i32, (y - LINE_W / 2.0).round() as i32, (x1 - x0) as u32, LINE_W as u32))
+        .ok();
+}
+
 fn draw_dashed_v(canvas: &mut Canvas<Window>, x: f64, y0: f64, y1: f64) {
-    let (dash, gap) = (14.0, 10.0);
+    let (dash, gap) = (18.0, 14.0);
     let mut y = y0;
     while y < y1 {
-        let y_end = (y + dash).min(y1);
-        canvas.draw_line((x as i32, y as i32), (x as i32, y_end as i32)).ok();
+        fill_v(canvas, x, y, (y + dash).min(y1));
         y += dash + gap;
     }
 }
 
 fn draw_dashed_h(canvas: &mut Canvas<Window>, y: f64, x0: f64, x1: f64) {
-    let (dash, gap) = (14.0, 10.0);
+    let (dash, gap) = (18.0, 14.0);
     let mut x = x0;
     while x < x1 {
-        let x_end = (x + dash).min(x1);
-        canvas.draw_line((x as i32, y as i32), (x_end as i32, y as i32)).ok();
+        fill_h(canvas, y, x, (x + dash).min(x1));
         x += dash + gap;
     }
 }

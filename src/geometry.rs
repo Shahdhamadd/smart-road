@@ -2,16 +2,15 @@ use crate::consts::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Direction {
-    North, // vehicle enters from the north edge, travels south
-    South, // enters from the south edge, travels north
-    East,  // enters from the east edge, travels west
-    West,  // enters from the west edge, travels east
+    North,
+    South,
+    East,
+    West,
 }
 
 impl Direction {
     pub const ALL: [Direction; 4] = [Direction::North, Direction::South, Direction::East, Direction::West];
 
-    /// True when travel is along the vertical (y) axis for this entry.
     pub fn is_vertical(self) -> bool {
         matches!(self, Direction::North | Direction::South)
     }
@@ -28,7 +27,6 @@ impl Route {
     pub const ALL: [Route; 3] = [Route::Right, Route::Straight, Route::Left];
 }
 
-/// x-coordinate of the lane for a North/South entry.
 fn lane_x(entry: Direction, route: Route) -> f64 {
     match (entry, route) {
         (Direction::North, Route::Right) => CENTER.0 - 125.0,
@@ -41,7 +39,6 @@ fn lane_x(entry: Direction, route: Route) -> f64 {
     }
 }
 
-/// y-coordinate of the lane for an East/West entry.
 fn lane_y(entry: Direction, route: Route) -> f64 {
     match (entry, route) {
         (Direction::West, Route::Left) => CENTER.1 + 25.0,
@@ -54,7 +51,6 @@ fn lane_y(entry: Direction, route: Route) -> f64 {
     }
 }
 
-/// The lane coordinate (x for N/S entries, y for E/W entries) a vehicle drives on.
 pub fn lane_coord(entry: Direction, route: Route) -> f64 {
     if entry.is_vertical() {
         lane_x(entry, route)
@@ -63,7 +59,6 @@ pub fn lane_coord(entry: Direction, route: Route) -> f64 {
     }
 }
 
-/// Destination direction+role used to find the exit lane coordinate for a turn.
 fn destination(entry: Direction, route: Route) -> (Direction, Route) {
     match (entry, route) {
         (Direction::North, Route::Right) => (Direction::East, Route::Right),
@@ -78,14 +73,13 @@ fn destination(entry: Direction, route: Route) -> (Direction, Route) {
     }
 }
 
-/// Coordinate of the exit lane (x for a vertical exit road, y for a horizontal one).
 pub fn exit_lane_coord(entry: Direction, route: Route) -> f64 {
     let (dest_dir, dest_route) = destination(entry, route);
     lane_coord(dest_dir, dest_route)
 }
 
 pub fn spawn_point(entry: Direction, route: Route) -> (f64, f64) {
-    let start_off = -CAR_LEN; // fully off-canvas
+    let start_off = -CAR_LEN;
     match entry {
         Direction::North => (lane_x(entry, route), start_off),
         Direction::South => (lane_x(entry, route), WIN_H as f64 - start_off),
@@ -99,14 +93,13 @@ pub fn exit_point_final(entry: Direction, route: Route) -> (f64, f64) {
     let end_off = WIN_W as f64 + CAR_LEN;
     let coord = exit_lane_coord(entry, route);
     match dest_dir {
-        Direction::South => (coord, end_off),
-        Direction::North => (coord, -CAR_LEN),
+        Direction::North => (coord, end_off),
+        Direction::South => (coord, -CAR_LEN),
         Direction::East => (-CAR_LEN, coord),
         Direction::West => (end_off, coord),
     }
 }
 
-/// Point where the entry lane crosses the near boundary of the intersection box.
 pub fn box_entry_point(entry: Direction, route: Route) -> (f64, f64) {
     match entry {
         Direction::North => (lane_x(entry, route), BOX_MIN),
@@ -116,13 +109,12 @@ pub fn box_entry_point(entry: Direction, route: Route) -> (f64, f64) {
     }
 }
 
-/// Point where the exit lane crosses the far boundary of the intersection box.
 pub fn box_exit_point(entry: Direction, route: Route) -> (f64, f64) {
     let (dest_dir, _) = destination(entry, route);
     let coord = exit_lane_coord(entry, route);
     match dest_dir {
-        Direction::South => (coord, BOX_MAX),
-        Direction::North => (coord, BOX_MIN),
+        Direction::North => (coord, BOX_MAX),
+        Direction::South => (coord, BOX_MIN),
         Direction::East => (BOX_MIN, coord),
         Direction::West => (BOX_MAX, coord),
     }

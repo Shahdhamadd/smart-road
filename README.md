@@ -29,6 +29,8 @@ cargo run --release
 
 ## Controls
 
+The application opens on a menu. Press `Enter` or `Space` to start the simulation, or `Esc` to quit.
+
 | Key | Action |
 | --- | --- |
 | `↑` | Spawn a vehicle from the south, travelling north |
@@ -52,8 +54,10 @@ On the statistics screen, press `Esc` or `Enter` to close the window.
 
 Every frame, `algorithm::update` picks a target speed for each vehicle, which the vehicle then approaches under acceleration (140 px/s²) and braking (220 px/s²) limits. The target is the minimum of two constraints:
 
-1. **Following distance.** For the nearest vehicle ahead in the same lane, the target is the speed from which the car can still brake to a stop before closing within the safe distance (`v = sqrt(2 · DECEL · d)`). This holds even if the leader stops instantly.
-2. **Grid reservation.** The intersection box is divided into a 6 × 6 grid of 50 px cells. Each vehicle occupies the cells under its body and claims the cells just ahead of it. Vehicles are processed in priority order (the one furthest along relative to the box goes first), and a vehicle that finds a cell on its path held by another slows down using the same stopping-speed rule.
+1. **Following distance.** For the nearest vehicle ahead in the same lane, the target is the speed from which the car can still brake to a stop before closing within the safe distance (`v = sqrt(2 · a · d)`). This holds even if the leader stops instantly.
+2. **Cell reservation.** The intersection box is divided into a 12 × 12 grid of 25 px cells, and every path knows which cells a vehicle's body sweeps on the way through. As a vehicle nears the box it asks for all of those cells at once. If any is held by a vehicle from another lane, it slows down and stops at the line until they are free. Cells are released one by one as the vehicle's body clears them.
+
+Requests are served longest-waiting first, and a waiting vehicle blocks later requests for the cells it needs, so no lane is starved. A vehicle inside the box already owns its whole way out, so vehicles never deadlock.
 
 Vehicles travel at three speed tiers: they spawn at 70 px/s, cruise at up to 200 px/s on open road, and are capped at 130 px/s from just before the box until they leave it.
 
@@ -72,9 +76,9 @@ When the simulation ends, the following are shown:
 | File | Purpose |
 | --- | --- |
 | `src/main.rs` | Window setup, input handling, main loop, statistics screen |
-| `src/algorithm.rs` | Smart-intersection controller (speed targets, grid reservation) |
+| `src/algorithm.rs` | Smart-intersection controller (speed targets, cell reservation) |
 | `src/vehicle.rs` | Vehicle state and physics step |
-| `src/path.rs` | Path construction, arc-length sampling, grid cell lookup |
+| `src/path.rs` | Path construction, arc-length sampling, swept grid cells |
 | `src/geometry.rs` | Directions, routes, lane coordinates, entry and exit points |
 | `src/spawner.rs` | Vehicle spawning with spawn-gap checks |
 | `src/stats.rs` | Statistics collection and close-call tracking |
