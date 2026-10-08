@@ -57,16 +57,24 @@ impl Stats {
         }
     }
 
-    pub fn lines(&self) -> Vec<String> {
-        let fmt = |v: f64| if v.is_finite() && v != f64::MIN && v != f64::MAX { format!("{:.1}", v) } else { "N/A".to_string() };
+    /// Summary rows as (label, value, unit).
+    pub fn rows(&self) -> Vec<(&'static str, String, &'static str)> {
+        let fmt = |v: f64| {
+            if v.is_finite() && v != f64::MIN && v != f64::MAX {
+                format!("{:.1}", v)
+            } else {
+                "N/A".to_string()
+            }
+        };
+        let avg = if self.velocity_samples == 0 { f64::MIN } else { self.average_velocity() };
         vec![
-            format!("Vehicles that passed the intersection: {}", self.vehicles_passed),
-            format!("Max velocity reached: {} px/s", fmt(self.max_velocity)),
-            format!("Min velocity reached: {} px/s", fmt(self.min_velocity)),
-            format!("Max time to cross: {} s", fmt(self.max_time)),
-            format!("Min time to cross: {} s", fmt(self.min_time)),
-            format!("Close calls (safe-distance violations): {}", self.close_calls),
-            format!("Average velocity: {} px/s", fmt(self.average_velocity())),
+            ("Vehicles passed", self.vehicles_passed.to_string(), ""),
+            ("Avg vehicle speed", fmt(avg), "px/s"),
+            ("Max speed", fmt(self.max_velocity), "px/s"),
+            ("Min velocity", fmt(self.min_velocity), "px/s"),
+            ("Max time to cross", fmt(self.max_time), "s"),
+            ("Min time to cross", fmt(self.min_time), "s"),
+            ("Close calls", self.close_calls.to_string(), ""),
         ]
     }
 }

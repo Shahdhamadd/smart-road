@@ -5,21 +5,21 @@ A simulation of a traffic-light-free intersection for autonomous vehicles, writt
 ## Requirements
 
 - Rust (2021 edition) and Cargo
-- SDL2 and SDL2_ttf development libraries, discoverable through `pkg-config`
+- SDL2 development libraries, discoverable through `pkg-config`
 
 On macOS:
 
 ```sh
-brew install sdl2 sdl2_ttf pkg-config
+brew install sdl2 pkg-config
 ```
 
 On Debian/Ubuntu:
 
 ```sh
-sudo apt install libsdl2-dev libsdl2-ttf-dev pkg-config
+sudo apt install libsdl2-dev pkg-config
 ```
 
-> The statistics screen loads a system font from hard-coded macOS paths (`FONT_CANDIDATES` in `src/main.rs`). On other platforms the simulation runs, but the statistics text is blank until you add a font path that exists on your system.
+> Menu and summary text is drawn with a built-in pixel font (`src/pixel.rs`), so no system fonts are needed.
 
 ## Running
 
@@ -29,7 +29,7 @@ cargo run --release
 
 ## Controls
 
-The application opens on a menu. Press `Enter` or `Space` to start the simulation, or `Esc` to quit.
+The application opens on a menu. Press `Enter` or `Space` (or click **Start**) to start the simulation, or `Esc` to quit.
 
 | Key | Action |
 | --- | --- |
@@ -38,11 +38,11 @@ The application opens on a menu. Press `Enter` or `Space` to start the simulatio
 | `→` | Spawn a vehicle from the west, travelling east |
 | `←` | Spawn a vehicle from the east, travelling west |
 | `R` | Toggle continuous random spawning (one vehicle every 0.55 s) |
-| `Esc` | End the simulation and show the statistics screen |
+| `Esc` | End the simulation and show the summary screen |
 
 Each spawned vehicle gets a random route (right, straight or left) and a random colour. A spawn is skipped if every lane on that side already has a vehicle too close to the entry point, so holding or spamming a key never stacks cars on top of each other.
 
-On the statistics screen, press `Esc` or `Enter` to close the window.
+On the summary screen, click **Start Again** (or press `Enter`, `Space` or `R`) to run a new simulation, or press `Esc` to quit.
 
 ## The intersection
 
