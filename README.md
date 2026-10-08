@@ -61,21 +61,33 @@ Requests are served longest-waiting first, and a waiting vehicle blocks later re
 
 Vehicles travel at three speed tiers: they spawn at 70 px/s, cruise at up to 200 px/s on open road, and are capped at 130 px/s from just before the box until they leave it.
 
-## Statistics
+## Summary screen
 
-When the simulation ends, the following are shown:
+Pressing `Esc` during the simulation ends the run and shows a summary:
 
-- Number of vehicles that passed the intersection
-- Max and min velocity reached
-- Max and min time taken to cross
-- Close calls: pairs of vehicles that came within 40 px of each other, centre to centre (each episode is counted once)
-- Average velocity
+| Stat | Meaning |
+| --- | --- |
+| Vehicles passed | Number of vehicles that crossed the intersection and left the window |
+| Avg vehicle speed | Average velocity of all vehicles over the whole run |
+| Max speed | Highest velocity any vehicle reached |
+| Min velocity | Lowest velocity any vehicle reached (0 if a vehicle had to stop) |
+| Max time to cross | Longest time a vehicle took from spawning to leaving |
+| Min time to cross | Shortest time a vehicle took from spawning to leaving |
+| Close calls | Pairs of vehicles that came within 40 px of each other, centre to centre (each episode is counted once) |
+
+Speeds are in px/s and times in seconds. A stat shows `N/A` if there is no data for it yet, for example the crossing times when no vehicle has finished. The close-calls marker is green when the count is zero and red otherwise.
+
+**Start Again** runs a fresh simulation with every stat reset, without going back to the menu.
+
+## Look and feel
+
+The menu and summary screens are drawn in a pixel-art style: a built-in 5 × 7 bitmap font, panels with stepped corners and hard drop shadows, and blocky buttons that brighten on hover. Everything is drawn with plain SDL2 rectangles, so there are no font or image assets to ship.
 
 ## Project layout
 
 | File | Purpose |
 | --- | --- |
-| `src/main.rs` | Window setup, input handling, main loop, statistics screen |
+| `src/main.rs` | Window setup, input handling, simulation loop, menu and summary screens |
 | `src/algorithm.rs` | Smart-intersection controller (speed targets, cell reservation) |
 | `src/vehicle.rs` | Vehicle state and physics step |
 | `src/path.rs` | Path construction, arc-length sampling, swept grid cells |
@@ -83,6 +95,7 @@ When the simulation ends, the following are shown:
 | `src/spawner.rs` | Vehicle spawning with spawn-gap checks |
 | `src/stats.rs` | Statistics collection and close-call tracking |
 | `src/render.rs` | Road and vehicle rendering |
+| `src/pixel.rs` | Pixel font and pixel-style panels and buttons for the menu and summary |
 | `src/consts.rs` | Tunable constants (sizes, speeds, distances) |
 
 Speeds, safe distances, lane width and the spawn interval can all be adjusted in `src/consts.rs`.
