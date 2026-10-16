@@ -4,8 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sdl2 = { version = "0.38", features = ["use-pkgconfig"] }
 rand = "0.8"
+
+# macOS/Linux: link against the system SDL2 found through pkg-config.
+[target.'cfg(not(windows))'.dependencies]
+sdl2 = { version = "0.38", features = ["use-pkgconfig"] }
+
+# Windows: build SDL2 from source and link it statically, so no SDL2 install is needed.
+[target.'cfg(windows)'.dependencies]
+sdl2 = { version = "0.38", features = ["bundled", "static-link"] }
 
 [profile.release]
 opt-level = 3

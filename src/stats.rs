@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::consts::CLOSE_CALL_DIST;
+use crate::consts::{CAR_LEN, SAFE_DISTANCE};
 use crate::vehicle::Vehicle;
 
 pub struct Stats {
@@ -85,10 +85,7 @@ pub fn update_close_calls(vehicles: &[Vehicle], stats: &mut Stats, active: &mut 
         for j in (i + 1)..vehicles.len() {
             let a = &vehicles[i];
             let b = &vehicles[j];
-            let dx = a.x - b.x;
-            let dy = a.y - b.y;
-            let dist = (dx * dx + dy * dy).sqrt();
-            if dist < CLOSE_CALL_DIST {
+            if too_close(a, b) {
                 let key = if a.id.0 < b.id.0 { (a.id.0, b.id.0) } else { (b.id.0, a.id.0) };
                 if !active.contains(&key) {
                     stats.close_calls += 1;
@@ -98,4 +95,34 @@ pub fn update_close_calls(vehicles: &[Vehicle], stats: &mut Stats, active: &mut 
         }
     }
     *active = still_active;
+}
+
+/// True when two vehicles break the spacing the controller is meant to guarantee:
+/// a same-lane gap below SAFE_DISTANCE, or overlapping footprints across lanes.
+pub fn too_close(a: &Vehicle, b: &Vehicle) -> bool {
+    if a.entry == b.entry && a.route == b.route {
+        (a.s - b.s).abs() - CAR_LEN < SAFE_DISTANCE
+    } else {
+        rects_overlap(&a.footprint(), &b.footprint())
+    }
+}
+
+/// Separating-axis test for two convex quads.
+fn rects_overlap(a: &[(f64, f64); 4], b: &[(f64, f64); 4]) -> bool {
+    for quad in [a, b] {
+        for k in 0..2 {
+            let (x0, y0) = quad[k];
+            let (x1, y1) = quad[k + 1];
+            let axis = (y0 - y1, x1 - x0);
+            let project = |q: &[(f64, f64); 4]| {
+                q.iter().map(|&(x, y)| x * axis.0 + y * axis.1).fold((f64::MAX, f64::MIN), |(lo, hi), p| (lo.min(p), hi.max(p)))
+            };
+            let (alo, ahi) = project(a);
+            let (blo, bhi) = project(b);
+            if ahi < blo || bhi < alo {
+                return false;
+            }
+        }
+    }
+    true
 }

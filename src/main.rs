@@ -87,10 +87,10 @@ fn run_simulation(
                 }
                 Event::KeyDown { keycode: Some(kc), repeat: false, .. } => match kc {
                     Keycode::Escape => running = false,
-                    Keycode::Up => try_spawn(Direction::South, &mut vehicles, paths, sim_time, &mut next_id, &mut rng),
-                    Keycode::Down => try_spawn(Direction::North, &mut vehicles, paths, sim_time, &mut next_id, &mut rng),
-                    Keycode::Right => try_spawn(Direction::West, &mut vehicles, paths, sim_time, &mut next_id, &mut rng),
-                    Keycode::Left => try_spawn(Direction::East, &mut vehicles, paths, sim_time, &mut next_id, &mut rng),
+                    Keycode::Up => try_spawn(Direction::South, &mut vehicles, paths, &mut next_id, &mut rng),
+                    Keycode::Down => try_spawn(Direction::North, &mut vehicles, paths, &mut next_id, &mut rng),
+                    Keycode::Right => try_spawn(Direction::West, &mut vehicles, paths, &mut next_id, &mut rng),
+                    Keycode::Left => try_spawn(Direction::East, &mut vehicles, paths, &mut next_id, &mut rng),
                     Keycode::R => random_spawn = !random_spawn,
                     _ => {}
                 },
@@ -109,11 +109,11 @@ fn run_simulation(
             if random_spawn_timer <= 0.0 {
                 random_spawn_timer = RANDOM_SPAWN_INTERVAL;
                 let entry = Direction::ALL[rng.gen_range(0..4)];
-                try_spawn(entry, &mut vehicles, paths, sim_time, &mut next_id, &mut rng);
+                try_spawn(entry, &mut vehicles, paths, &mut next_id, &mut rng);
             }
         }
 
-        algorithm::update(&mut vehicles, dt);
+        algorithm::update(&mut vehicles, dt, sim_time);
 
         for v in vehicles.iter() {
             stats.record_velocity_sample(v.velocity);
@@ -124,7 +124,9 @@ fn run_simulation(
         while i < vehicles.len() {
             if vehicles[i].is_done() {
                 let v = vehicles.swap_remove(i);
-                stats.record_completion(sim_time - v.spawn_time);
+                if let Some(detected_at) = v.detected_at {
+                    stats.record_completion(sim_time - detected_at);
+                }
             } else {
                 i += 1;
             }
@@ -144,11 +146,10 @@ fn try_spawn(
     entry: Direction,
     vehicles: &mut Vec<Vehicle>,
     paths: &PathTable,
-    sim_time: f64,
     next_id: &mut u64,
     rng: &mut ThreadRng,
 ) {
-    if let Some(v) = spawner::spawn(entry, vehicles, paths, sim_time, next_id, rng, PALETTE_LEN) {
+    if let Some(v) = spawner::spawn(entry, vehicles, paths, next_id, rng, PALETTE_LEN) {
         vehicles.push(v);
     }
 }
@@ -305,4 +306,60 @@ fn draw_backdrop(canvas: &mut Screen) {
     canvas.set_draw_color(OVERLAY);
     canvas.fill_rect(None).ok();
     canvas.set_blend_mode(BlendMode::None);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+
+    /// Runs the controller headless under heavy random traffic and returns its stats.
+    fn simulate(seed: u64, seconds: f64, spawn_interval: f64) -> Stats {
+        let paths = PathTable::new();
+        let mut rng = StdRng::seed_from_u64(seed);
+        let mut vehicles: Vec<Vehicle> = Vec::new();
+        let mut stats = Stats::new();
+        let mut active = HashSet::new();
+        let mut next_id = 1;
+        let dt = 1.0 / 60.0;
+        let mut sim_time = 0.0;
+        let mut timer = 0.0;
+        while sim_time < seconds {
+            sim_time += dt;
+            timer -= dt;
+            if timer <= 0.0 {
+                timer = spawn_interval;
+                let entry = Direction::ALL[rng.gen_range(0..4)];
+                if let Some(v) = spawner::spawn(entry, &vehicles, &paths, &mut next_id, &mut rng, PALETTE_LEN) {
+                    vehicles.push(v);
+                }
+            }
+            algorithm::update(&mut vehicles, dt, sim_time);
+            stats::update_close_calls(&vehicles, &mut stats, &mut active);
+            vehicles.retain(|v| {
+                if v.is_done() {
+                    stats.record_completion(sim_time - v.detected_at.expect("every path crosses the request zone"));
+                }
+                !v.is_done()
+            });
+        }
+        stats
+    }
+
+    #[test]
+    fn heavy_random_traffic_has_no_close_calls() {
+        for seed in 0..8 {
+            let stats = simulate(seed, 300.0, 0.25);
+            assert!(stats.vehicles_passed > 300, "seed {seed}: only {} passed", stats.vehicles_passed);
+            assert_eq!(stats.close_calls, 0, "seed {seed}");
+        }
+    }
+
+    #[test]
+    fn grid_cell_stays_in_range_on_box_edges() {
+        assert_eq!(path::grid_cell(BOX_MAX, BOX_MAX), None);
+        assert_eq!(path::grid_cell(BOX_MIN, BOX_MIN), Some((0, 0)));
+        assert_eq!(path::grid_cell(BOX_MAX - 1e-9, BOX_MIN), Some((11, 0)));
+    }
 }

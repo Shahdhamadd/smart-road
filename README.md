@@ -5,7 +5,8 @@ A simulation of a traffic-light-free intersection for autonomous vehicles, writt
 ## Requirements
 
 - Rust (2021 edition) and Cargo
-- SDL2 development libraries, discoverable through `pkg-config`
+- macOS/Linux: SDL2 development libraries, discoverable through `pkg-config`
+- Windows: CMake and a C compiler (SDL2 itself is built from source automatically)
 
 On macOS:
 
@@ -19,6 +20,19 @@ On Debian/Ubuntu:
 sudo apt install libsdl2-dev pkg-config
 ```
 
+On Windows, no SDL2 install is needed: Cargo builds SDL2 from source and links it statically into the executable (the `bundled` and `static-link` features of the `sdl2` crate, enabled only for Windows in `Cargo.toml`). You need:
+
+1. Rust with the default MSVC toolchain (`x86_64-pc-windows-msvc`), installed via [rustup](https://rustup.rs). Its installer offers the Visual Studio C++ Build Tools, which provide the C compiler.
+2. CMake on your `PATH`:
+
+   ```powershell
+   winget install Kitware.CMake
+   ```
+
+   Open a new terminal afterwards so the updated `PATH` is picked up.
+
+The first build takes a few minutes longer while SDL2 compiles; later builds are cached. The resulting `smart_road.exe` runs on its own, with no `SDL2.dll` next to it.
+
 > Menu and summary text is drawn with a built-in pixel font (`src/pixel.rs`), so no system fonts are needed.
 
 ## Running
@@ -26,6 +40,12 @@ sudo apt install libsdl2-dev pkg-config
 ```sh
 cargo run --release
 ```
+
+`cargo test --release` runs the test suite. No window is opened, because the controller and the vehicle physics don't depend on SDL2.
+
+- `src/vehicle.rs`: acceleration and braking limits, the speed cap, position updates and footprint shape.
+- `src/algorithm.rs`: safe following distance (including a leader that stops instantly), cell reservation (crossing lanes are never granted together, cells are released once a vehicle has passed them, longest-waiting vehicle first, a waiting vehicle holds its place in the queue), stopping before the box, and one vehicle per lane all crossing with no close calls.
+- `src/main.rs`: several minutes of heavy random traffic with no close calls, and the grid boundary.
 
 ## Controls
 
@@ -71,9 +91,16 @@ Pressing `Esc` during the simulation ends the run and shows a summary:
 | Avg vehicle speed | Average velocity of all vehicles over the whole run |
 | Max speed | Highest velocity any vehicle reached |
 | Min velocity | Lowest velocity any vehicle reached (0 if a vehicle had to stop) |
-| Max time to cross | Longest time a vehicle took from spawning to leaving |
-| Min time to cross | Shortest time a vehicle took from spawning to leaving |
-| Close calls | Pairs of vehicles that came within 40 px of each other, centre to centre (each episode is counted once) |
+| Max time to cross | Longest time a vehicle took from detection to leaving the window |
+| Min time to cross | Shortest time a vehicle took from detection to leaving the window |
+| Close calls | Pairs of vehicles that broke the controller's spacing rules (each episode is counted once, see below) |
+
+A vehicle is **detected** when its front reaches the request zone, 140 px before the intersection box, where the controller first starts managing it. Time spent driving in from the window edge before that is not counted.
+
+A **close call** is any moment two vehicles break the spacing the controller is meant to guarantee:
+
+- **Same lane:** the bumper-to-bumper gap drops below the safe distance (55 px).
+- **Different lanes:** their footprints overlap. A footprint is the car body plus a 5 px margin on every side, the same area the cell reservation keeps clear.
 
 Speeds are in px/s and times in seconds. A stat shows `N/A` if there is no data for it yet, for example the crossing times when no vehicle has finished. The close-calls marker is green when the count is zero and red otherwise.
 

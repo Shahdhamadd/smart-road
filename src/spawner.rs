@@ -9,7 +9,6 @@ pub fn spawn(
     entry: Direction,
     vehicles: &[Vehicle],
     paths: &PathTable,
-    sim_time: f64,
     next_id: &mut u64,
     rng: &mut impl Rng,
     palette_len: usize,
@@ -26,7 +25,7 @@ pub fn spawn(
             let id = VehicleId(*next_id);
             *next_id += 1;
             let color_idx = rng.gen_range(0..palette_len);
-            return Some(Vehicle::new(id, entry, route, path, sim_time, color_idx));
+            return Some(Vehicle::new(id, entry, route, path, color_idx));
         }
     }
     None
