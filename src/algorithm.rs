@@ -104,7 +104,6 @@ mod tests {
         (v.x, v.y, v.angle) = v.path.sample(s);
     }
 
-    /// A position whose front is just inside the reservation request zone.
     fn in_request_zone(paths: &PathTable, entry: Direction, route: Route) -> f64 {
         paths.get(entry, route).box_enter_dist - REQUEST_DIST + 1.0 - CAR_LEN / 2.0
     }
@@ -124,8 +123,6 @@ mod tests {
     fn gap(follower: &Vehicle, leader: &Vehicle) -> f64 {
         leader.rear_s() - follower.front_s()
     }
-
-    // ---- safe following distance ----
 
     #[test]
     fn safe_speed_can_always_stop_within_the_distance() {
@@ -164,7 +161,6 @@ mod tests {
     #[test]
     fn follower_keeps_safe_distance_when_leader_stops_instantly() {
         let paths = PathTable::new();
-        // Both at full speed, with the follower as close as its target speed allows.
         let start_gap = SAFE_DISTANCE + FOLLOW_BUFFER + FAST * FAST / (2.0 * 0.8 * DECEL);
         let mut leader = car(&paths, 1, Direction::East, Route::Straight, 500.0, FAST);
         let mut f = car(&paths, 2, Direction::East, Route::Straight, 500.0 - CAR_LEN - start_gap, FAST);
@@ -178,8 +174,6 @@ mod tests {
         }
         assert_eq!(f.velocity, 0.0);
     }
-
-    // ---- cell reservation ----
 
     #[test]
     fn crossing_lanes_are_never_granted_together() {
@@ -248,8 +242,6 @@ mod tests {
 
     #[test]
     fn a_waiting_vehicle_blocks_later_requests_for_its_cells() {
-        // holder (lane x) blocks waiter (lane y); newcomer (lane z) only conflicts with
-        // the waiter, so it would get through if waiting vehicles didn't hold their place.
         let paths = PathTable::new();
         let lanes = all_lanes();
         let lanes = &lanes;
@@ -303,8 +295,6 @@ mod tests {
             assert!(front + stop <= enter, "front {front:.0} at {target:.1} px/s overruns the box");
         }
     }
-
-    // ---- whole controller ----
 
     #[test]
     fn one_vehicle_per_lane_all_cross_without_close_calls() {

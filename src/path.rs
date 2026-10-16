@@ -204,7 +204,6 @@ impl PathTable {
 }
 
 pub fn grid_cell(x: f64, y: f64) -> Option<(i32, i32)> {
-    // Half-open box, so x == BOX_MAX can't produce an out-of-range cell index 12.
     if x < BOX_MIN || x >= BOX_MAX || y < BOX_MIN || y >= BOX_MAX {
         return None;
     }

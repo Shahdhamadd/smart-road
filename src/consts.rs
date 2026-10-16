@@ -19,7 +19,6 @@ pub const ACCEL: f64 = 140.0;
 pub const DECEL: f64 = 220.0;
 
 pub const SAFE_DISTANCE: f64 = 55.0;
-/// Followers aim this far past SAFE_DISTANCE so per-frame overshoot never dips below it.
 pub const FOLLOW_BUFFER: f64 = 1.0;
 
 pub const GRID_CELL: f64 = 25.0;

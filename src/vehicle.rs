@@ -18,7 +18,6 @@ pub struct Vehicle {
     pub x: f64,
     pub y: f64,
     pub angle: f64,
-    /// Sim time at which the controller first saw this vehicle in its request zone.
     pub detected_at: Option<f64>,
     pub color_idx: usize,
     pub granted: bool,
@@ -53,7 +52,6 @@ impl Vehicle {
         self.s - CAR_LEN / 2.0
     }
 
-    /// Corners of the body grown by FOOTPRINT_MARGIN, the area the controller keeps clear.
     pub fn footprint(&self) -> [(f64, f64); 4] {
         let a = self.angle.to_radians();
         let (fx, fy) = (a.sin(), -a.cos());

@@ -171,7 +171,6 @@ const RED: Color = Color::RGB(240, 80, 70);
 
 type Screen = sdl2::render::Canvas<sdl2::video::Window>;
 
-/// Shows the start menu. Returns false if the user quit.
 fn show_menu(canvas: &mut Screen, event_pump: &mut sdl2::EventPump) -> bool {
     const CONTROLS: [(&str, &str); 6] = [
         ("Up", "Vehicle from south"),

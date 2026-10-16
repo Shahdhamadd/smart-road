@@ -57,7 +57,6 @@ impl Stats {
         }
     }
 
-    /// Summary rows as (label, value, unit).
     pub fn rows(&self) -> Vec<(&'static str, String, &'static str)> {
         let fmt = |v: f64| {
             if v.is_finite() && v != f64::MIN && v != f64::MAX {
@@ -97,8 +96,6 @@ pub fn update_close_calls(vehicles: &[Vehicle], stats: &mut Stats, active: &mut 
     *active = still_active;
 }
 
-/// True when two vehicles break the spacing the controller is meant to guarantee:
-/// a same-lane gap below SAFE_DISTANCE, or overlapping footprints across lanes.
 pub fn too_close(a: &Vehicle, b: &Vehicle) -> bool {
     if a.entry == b.entry && a.route == b.route {
         (a.s - b.s).abs() - CAR_LEN < SAFE_DISTANCE
@@ -107,7 +104,6 @@ pub fn too_close(a: &Vehicle, b: &Vehicle) -> bool {
     }
 }
 
-/// Separating-axis test for two convex quads.
 fn rects_overlap(a: &[(f64, f64); 4], b: &[(f64, f64); 4]) -> bool {
     for quad in [a, b] {
         for k in 0..2 {

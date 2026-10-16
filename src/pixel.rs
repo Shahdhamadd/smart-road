@@ -5,7 +5,6 @@ use sdl2::video::Window;
 
 use crate::consts::WIN_W;
 
-/// Size of one "pixel" block used for borders, corners and shadows.
 pub const PX: i32 = 4;
 
 const GLYPH_W: i32 = 5;
@@ -13,7 +12,6 @@ const GLYPH_H: i32 = 7;
 
 const SHADOW: Color = Color::RGB(8, 9, 13);
 
-/// 5x7 bitmap font, one row per byte with the leftmost pixel in bit 4.
 fn glyph(c: char) -> [u8; 7] {
     match c.to_ascii_uppercase() {
         'A' => [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
@@ -73,7 +71,6 @@ pub fn text_height(scale: i32) -> i32 {
     GLYPH_H * scale
 }
 
-/// Draws text with its top-left corner at (x, y) and returns the drawn width.
 pub fn draw_text(canvas: &mut Canvas<Window>, text: &str, x: i32, y: i32, scale: i32, color: Color) -> i32 {
     let mut rects = Vec::new();
     for (i, c) in text.chars().enumerate() {
@@ -95,7 +92,6 @@ pub fn draw_text_centered(canvas: &mut Canvas<Window>, text: &str, y: i32, scale
     draw_text(canvas, text, (WIN_W as i32 - text_width(text, scale)) / 2, y, scale, color);
 }
 
-/// Centered text with a hard drop shadow, for titles.
 pub fn draw_title(canvas: &mut Canvas<Window>, text: &str, y: i32, scale: i32, color: Color) {
     let x = (WIN_W as i32 - text_width(text, scale)) / 2;
     draw_text(canvas, text, x + scale, y + scale, scale, SHADOW);
@@ -108,7 +104,6 @@ pub fn draw_text_in(canvas: &mut Canvas<Window>, text: &str, rect: Rect, scale: 
     draw_text(canvas, text, x, y, scale, color);
 }
 
-/// A rectangle with one PX block cut from each corner.
 fn stepped_rect(canvas: &mut Canvas<Window>, rect: Rect, color: Color) {
     let (x, y, w, h) = (rect.x(), rect.y(), rect.width() as i32, rect.height() as i32);
     canvas.set_draw_color(color);
@@ -120,7 +115,6 @@ fn inset(rect: Rect, by: i32) -> Rect {
     Rect::new(rect.x() + by, rect.y() + by, rect.width() - 2 * by as u32, rect.height() - 2 * by as u32)
 }
 
-/// A bordered box with stepped corners and a hard drop shadow.
 pub fn panel(canvas: &mut Canvas<Window>, rect: Rect, fill: Color, border: Color) {
     let mut shadow = rect;
     shadow.offset(2 * PX, 2 * PX);
