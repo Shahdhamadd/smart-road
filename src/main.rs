@@ -298,7 +298,6 @@ fn show_stats_screen(canvas: &mut Screen, stats: &Stats, event_pump: &mut sdl2::
     }
 }
 
-/// The road scene dimmed behind a menu card.
 fn draw_backdrop(canvas: &mut Screen) {
     render::draw_scene(canvas);
     canvas.set_blend_mode(BlendMode::Blend);
@@ -313,7 +312,6 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
-    /// Runs the controller headless under heavy random traffic and returns its stats.
     fn simulate(seed: u64, seconds: f64, spawn_interval: f64) -> Stats {
         let paths = PathTable::new();
         let mut rng = StdRng::seed_from_u64(seed);

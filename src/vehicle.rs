@@ -164,7 +164,6 @@ mod tests {
         let side = |a: (f64, f64), b: (f64, f64)| ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();
         assert!((side(c[0], c[3]) - (CAR_LEN + 2.0 * FOOTPRINT_MARGIN)).abs() < EPS);
         assert!((side(c[0], c[1]) - (CAR_WID + 2.0 * FOOTPRINT_MARGIN)).abs() < EPS);
-        // Car entering from the north drives along y, so the long sides are vertical.
         assert!((c[0].0 - c[3].0).abs() < EPS);
     }
 }
