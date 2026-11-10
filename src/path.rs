@@ -107,10 +107,12 @@ pub fn build_path(entry: Direction, route: Route) -> Path {
     let mut pts = Vec::with_capacity(64);
     pts.push(spawn);
     const LEAD: usize = 4;
+    //linear interpolation
     for i in 1..LEAD {
         let t = i as f64 / LEAD as f64;
         pts.push((spawn.0 + (box_in.0 - spawn.0) * t, spawn.1 + (box_in.1 - spawn.1) * t));
     }
+    //bezier
     const CURVE: usize = 48;
     for i in 0..=CURVE {
         let t = i as f64 / CURVE as f64;
